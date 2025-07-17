@@ -164,13 +164,14 @@ class Othello:
         elif white_score > black_score: self.winner = PLAYER_WHITE
         else: self.winner = EMPTY # Tie
 
-    def draw(self, win, font, small_font):
+    def draw(self, win, font, small_font, game_mode):
         """ Main drawing function, called every frame. """
         self._draw_board_and_grid(win)
         self._draw_pieces_and_animations(win)
         self._draw_hover_and_valid_moves(win)
         self.draw_hud(win, font, small_font)
-        self.draw_ai_debug_panel(win, font, small_font)
+        if game_mode != "PvP":
+            self.draw_ai_debug_panel(win, font, small_font)
 
     def _draw_board_and_grid(self, win):
         """ Draws the board background, border, and grid lines. """
@@ -709,6 +710,7 @@ def main():
     sounds = {}
     try:
         # NOTE: You must provide these audio files in the same directory
+        # .ogg is recommended for music, .wav for short sounds.
         pygame.mixer.music.load('menu_music.mp3')
         pygame.mixer.music.set_volume(0.5)
         sounds['place'] = pygame.mixer.Sound('place_sound.wav')
@@ -805,7 +807,7 @@ def main():
             
             # Drawing
             win.fill(DARK_GREEN)
-            game.draw(win, font, small_font)
+            game.draw(win, font, small_font, game_mode)
             
             if game.game_over:
                 game_state = GameState.GAME_OVER
