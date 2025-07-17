@@ -9,19 +9,24 @@ import copy
 # =============================================================================
 
 # --- Screen Dimensions ---
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 1100, 700 # Increased width for AI debug panel
 BOARD_SIZE = 560  # Size of the game board (must be a multiple of 8)
 SQUARE_SIZE = BOARD_SIZE // 8
-BOARD_X = (WIDTH - BOARD_SIZE) // 2
+BOARD_X = 50
 BOARD_Y = (HEIGHT - BOARD_SIZE) // 2
+DEBUG_PANEL_X = BOARD_X + BOARD_SIZE + 50
+DEBUG_PANEL_WIDTH = 350
 
+# --- Colors ---
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 128, 0)
 DARK_GREEN = (0, 100, 0)
 GRAY = (200, 200, 200)
+DARK_GRAY = (50, 50, 50)
 BLUE = (50, 50, 255)
 RED = (255, 50, 50)
+GOLD = (255, 215, 0) # For highlighting the best move
 TRANSPARENT_GRAY = (50, 50, 50, 150)
 
 # --- Game Constants ---
@@ -31,7 +36,7 @@ EMPTY = 0
 DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
 # --- AI Settings ---
-AI_DEPTH = 4 
+AI_DEPTH = 4  # How many moves the AI looks ahead. Higher is smarter but slower.
 
 # =============================================================================
 # 2. Game Logic Class (The "Model")
@@ -52,6 +57,7 @@ class Othello:
         self.current_player = PLAYER_BLACK
         self.valid_moves = []
         self.update_valid_moves()
+        self.ai_decision_log = [] # To store AI move evaluations
 
     def is_on_board(self, r, c):
         """Checks if a given (row, col) is within the 8x8 board."""
@@ -98,11 +104,9 @@ class Othello:
             for piece_pos in self.valid_moves[(r, c)]:
                 self.board[piece_pos[0]][piece_pos[1]] = self.current_player
             
-            # Switch player and update valid moves for the new player
             self.current_player *= -1
             self.update_valid_moves()
             
-            # If the new player has no moves, skip their turn
             if not self.valid_moves:
                 self.current_player *= -1
                 self.update_valid_moves()
@@ -123,7 +127,7 @@ class Othello:
         """Checks if the game has ended (no valid moves for either player)."""
         return not self.valid_moves
 
-    def draw(self, win, font):
+    def draw(self, win, font, small_font):
         """Draws the entire game state: board, pieces, scores, and valid moves."""
         # Draw board grid
         for r in range(8):
@@ -148,32 +152,67 @@ class Othello:
             pygame.draw.circle(surface, color, (SQUARE_SIZE // 2, SQUARE_SIZE // 2), SQUARE_SIZE // 2 - 10)
             win.blit(surface, (BOARD_X + c * SQUARE_SIZE, BOARD_Y + r * SQUARE_SIZE))
             
-        # Draw score and turn info
         self.draw_hud(win, font)
+        self.draw_ai_debug_panel(win, font, small_font)
 
     def draw_hud(self, win, font):
         """Draws the Heads-Up Display (score, turn indicator)."""
         black_score, white_score = self.get_score()
-
-        # Score Box
-        pygame.draw.rect(win, GRAY, (BOARD_X, 10, BOARD_SIZE, 50), border_radius=10)
+        hud_width = BOARD_SIZE
+        hud_x = BOARD_X
         
-        # Black Score
-        pygame.draw.circle(win, BLACK, (BOARD_X + 40, 35), 18)
+        pygame.draw.rect(win, GRAY, (hud_x, 20, hud_width, 50), border_radius=10)
+        
+        pygame.draw.circle(win, BLACK, (hud_x + 40, 45), 18)
         score_text = font.render(f"{black_score}", True, BLACK)
-        win.blit(score_text, (BOARD_X + 70, 20))
+        win.blit(score_text, (hud_x + 70, 30))
 
-        # White Score
-        pygame.draw.circle(win, WHITE, (BOARD_X + BOARD_SIZE - 40, 35), 18)
+        pygame.draw.circle(win, WHITE, (hud_x + hud_width - 40, 45), 18)
         score_text = font.render(f"{white_score}", True, BLACK)
-        win.blit(score_text, (BOARD_X + BOARD_SIZE - 80, 20))
+        win.blit(score_text, (hud_x + hud_width - 80, 30))
 
-        # Turn Indicator
         turn_text = "Black's Turn" if self.current_player == PLAYER_BLACK else "White's Turn"
         text_surface = font.render(turn_text, True, WHITE)
-        text_rect = text_surface.get_rect(center=(WIDTH // 2, 35))
+        text_rect = text_surface.get_rect(center=(hud_x + hud_width / 2, 45))
         pygame.draw.rect(win, BLUE, (text_rect.x - 10, text_rect.y - 5, text_rect.width + 20, text_rect.height + 10), border_radius=8)
         win.blit(text_surface, text_rect)
+
+    def draw_ai_debug_panel(self, win, font, small_font):
+        """Draws the panel showing AI's decision process."""
+        panel_rect = pygame.Rect(DEBUG_PANEL_X, BOARD_Y, DEBUG_PANEL_WIDTH, BOARD_SIZE)
+        pygame.draw.rect(win, DARK_GRAY, panel_rect, border_radius=15)
+
+        title_text = font.render("AI Decision Process", True, WHITE)
+        win.blit(title_text, (DEBUG_PANEL_X + 20, BOARD_Y + 15))
+
+        if not self.ai_decision_log:
+            no_info_text = small_font.render("Waiting for AI move...", True, GRAY)
+            win.blit(no_info_text, (DEBUG_PANEL_X + 20, BOARD_Y + 60))
+            return
+
+        y_offset = BOARD_Y + 60
+        # Display top 10 moves considered
+        for i, (score, move) in enumerate(self.ai_decision_log[:10]):
+            if y_offset > BOARD_Y + BOARD_SIZE - 30: break
+            
+            # Highlight the best move (the one the AI chose)
+            is_best_move = (i == 0)
+            text_color = GOLD if is_best_move else WHITE
+            bg_color = (60, 60, 60) if is_best_move else DARK_GRAY
+
+            move_text = f"Move: ({move[0]}, {move[1]})"
+            score_text = f"Score: {score:.2f}"
+            
+            line_rect = pygame.Rect(DEBUG_PANEL_X + 10, y_offset, DEBUG_PANEL_WIDTH - 20, 30)
+            pygame.draw.rect(win, bg_color, line_rect, border_radius=5)
+
+            move_surf = small_font.render(move_text, True, text_color)
+            score_surf = small_font.render(score_text, True, text_color)
+            
+            win.blit(move_surf, (DEBUG_PANEL_X + 20, y_offset + 7))
+            win.blit(score_surf, (DEBUG_PANEL_X + 180, y_offset + 7))
+            
+            y_offset += 40
 
 # =============================================================================
 # 3. AI Logic (Minimax with Alpha-Beta Pruning)
@@ -182,90 +221,77 @@ class Othello:
 def evaluate_board(board, player):
     """
     Heuristic function to evaluate the 'goodness' of a board state for the AI.
-    A positive score is good for the AI, negative is bad.
     """
     score = 0
     opponent = -player
+    PIECE_COUNT_WEIGHT, MOBILITY_WEIGHT, CORNER_WEIGHT = 1, 5, 50
 
-    # Heuristic weights
-    PIECE_COUNT_WEIGHT = 1
-    MOBILITY_WEIGHT = 5
-    CORNER_WEIGHT = 50
-
-    # 1. Piece Count
     my_pieces = sum(row.count(player) for row in board)
     opp_pieces = sum(row.count(opponent) for row in board)
     score += PIECE_COUNT_WEIGHT * (my_pieces - opp_pieces)
 
-    # 2. Mobility (number of available moves)
-    # Create a temporary game object to use its methods
     temp_game = Othello()
     temp_game.board = board
     my_moves = len(temp_game.get_valid_moves(player))
     opp_moves = len(temp_game.get_valid_moves(opponent))
     score += MOBILITY_WEIGHT * (my_moves - opp_moves)
 
-    # 3. Corner Control
     corners = [(0, 0), (0, 7), (7, 0), (7, 7)]
-    my_corners = 0
-    opp_corners = 0
-    for r, c in corners:
-        if board[r][c] == player:
-            my_corners += 1
-        elif board[r][c] == opponent:
-            opp_corners += 1
+    my_corners = sum(1 for r, c in corners if board[r][c] == player)
+    opp_corners = sum(1 for r, c in corners if board[r][c] == opponent)
     score += CORNER_WEIGHT * (my_corners - opp_corners)
     
     return score
 
-
 def minimax(game_state, depth, alpha, beta, maximizing_player, ai_player):
     """
     Minimax algorithm with alpha-beta pruning.
-    Returns the best score and the corresponding move (r, c).
+    Returns: best score, best move, and a log of evaluated moves.
     """
     if depth == 0 or game_state.is_game_over():
-        return evaluate_board(game_state.board, ai_player), None
+        return evaluate_board(game_state.board, ai_player), None, []
 
     valid_moves = game_state.get_valid_moves(game_state.current_player)
     
     if not valid_moves:
-        # If no moves, pass the turn and continue search
         next_state = copy.deepcopy(game_state)
         next_state.current_player *= -1
         return minimax(next_state, depth - 1, alpha, beta, not maximizing_player, ai_player)
 
+    evaluated_moves = []
     best_move = list(valid_moves.keys())[0]
 
     if maximizing_player:
         max_eval = -math.inf
         for move in valid_moves:
-            # Create a new game state for the simulated move
             next_state = copy.deepcopy(game_state)
             next_state.make_move(move[0], move[1])
-            
-            evaluation, _ = minimax(next_state, depth - 1, alpha, beta, False, ai_player)
+            evaluation, _, _ = minimax(next_state, depth - 1, alpha, beta, False, ai_player)
+            evaluated_moves.append((evaluation, move))
             if evaluation > max_eval:
                 max_eval = evaluation
                 best_move = move
             alpha = max(alpha, evaluation)
             if beta <= alpha:
-                break  # Prune
-        return max_eval, best_move
-    else:  # Minimizing player
+                break
+        # Sort moves by score for display
+        evaluated_moves.sort(key=lambda x: x[0], reverse=True)
+        return max_eval, best_move, evaluated_moves
+    else:
         min_eval = math.inf
         for move in valid_moves:
             next_state = copy.deepcopy(game_state)
             next_state.make_move(move[0], move[1])
-            
-            evaluation, _ = minimax(next_state, depth - 1, alpha, beta, True, ai_player)
+            evaluation, _, _ = minimax(next_state, depth - 1, alpha, beta, True, ai_player)
+            evaluated_moves.append((evaluation, move))
             if evaluation < min_eval:
                 min_eval = evaluation
                 best_move = move
             beta = min(beta, evaluation)
             if beta <= alpha:
-                break  # Prune
-        return min_eval, best_move
+                break
+        evaluated_moves.sort(key=lambda x: x[0])
+        return min_eval, best_move, evaluated_moves
 
 # =============================================================================
 # 4. Main Game Loop and UI
@@ -280,15 +306,15 @@ def draw_button(win, rect, text, font, button_color, text_color):
 
 def main_menu(win, font, big_font):
     """Displays the main menu and returns the selected game mode."""
-    pvp_button = pygame.Rect(WIDTH // 2 - 150, 200, 300, 50)
-    pvb_button = pygame.Rect(WIDTH // 2 - 150, 270, 300, 50)
-    bvb_button = pygame.Rect(WIDTH // 2 - 150, 340, 300, 50)
+    pvp_button = pygame.Rect(WIDTH // 2 - 150, 250, 300, 50)
+    pvb_button = pygame.Rect(WIDTH // 2 - 150, 320, 300, 50)
+    bvb_button = pygame.Rect(WIDTH // 2 - 150, 390, 300, 50)
 
     while True:
         win.fill(DARK_GREEN)
         
         title_text = big_font.render("Othello AI", True, WHITE)
-        title_rect = title_text.get_rect(center=(WIDTH // 2, 100))
+        title_rect = title_text.get_rect(center=(WIDTH // 2, 150))
         win.blit(title_text, title_rect)
 
         draw_button(win, pvp_button, "Player vs Player", font, BLUE, WHITE)
@@ -313,23 +339,22 @@ def main():
     """Main function to run the game."""
     pygame.init()
     win = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Othello")
+    pygame.display.set_caption("Othello AI")
     font = pygame.font.SysFont("Arial", 24, bold=True)
-    big_font = pygame.font.SysFont("Arial", 50, bold=True)
+    small_font = pygame.font.SysFont("Arial", 18)
+    big_font = pygame.font.SysFont("Arial", 60, bold=True)
     clock = pygame.time.Clock()
 
     game_mode = main_menu(win, font, big_font)
     game = Othello()
     run = True
     
-    # Bot vs Bot specific timer
     last_bot_move_time = time.time()
-    bot_move_delay = 1.0 # seconds
+    bot_move_delay = 1.0
 
     while run:
         clock.tick(60)
 
-        # --- Event Handling ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -337,58 +362,51 @@ def main():
             if game.is_game_over():
                 continue
 
-            # --- Player vs Player ---
             if game_mode == "pvp":
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     x, y = event.pos
                     if BOARD_X <= x < BOARD_X + BOARD_SIZE and BOARD_Y <= y < BOARD_Y + BOARD_SIZE:
                         row = (y - BOARD_Y) // SQUARE_SIZE
                         col = (x - BOARD_X) // SQUARE_SIZE
-                        game.make_move(row, col)
+                        if game.make_move(row, col):
+                            game.ai_decision_log = [] # Clear log on human move
 
-            # --- Player vs Bot ---
             elif game_mode == "pvb":
-                if game.current_player == PLAYER_BLACK: # Human player
+                if game.current_player == PLAYER_BLACK: # Human
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         x, y = event.pos
                         if BOARD_X <= x < BOARD_X + BOARD_SIZE and BOARD_Y <= y < BOARD_Y + BOARD_SIZE:
                             row = (y - BOARD_Y) // SQUARE_SIZE
                             col = (x - BOARD_X) // SQUARE_SIZE
-                            game.make_move(row, col)
-                else: # Bot player (White)
-                    pygame.display.update() # Show board before AI thinks
-                    _, best_move = minimax(game, AI_DEPTH, -math.inf, math.inf, True, PLAYER_WHITE)
+                            if game.make_move(row, col):
+                                game.ai_decision_log = []
+                else: # Bot
+                    pygame.display.update()
+                    _, best_move, decision_log = minimax(game, AI_DEPTH, -math.inf, math.inf, True, PLAYER_WHITE)
+                    game.ai_decision_log = decision_log
                     if best_move:
                         game.make_move(best_move[0], best_move[1])
 
-        # --- Bot vs Bot ---
         if game_mode == "bvb" and not game.is_game_over():
             current_time = time.time()
             if current_time - last_bot_move_time > bot_move_delay:
                 ai_player = game.current_player
-                _, best_move = minimax(game, AI_DEPTH, -math.inf, math.inf, True, ai_player)
+                _, best_move, decision_log = minimax(game, AI_DEPTH, -math.inf, math.inf, True, ai_player)
+                game.ai_decision_log = decision_log
                 if best_move:
                     game.make_move(best_move[0], best_move[1])
                 last_bot_move_time = current_time
 
-        # --- Drawing ---
         win.fill(DARK_GREEN)
-        game.draw(win, font)
+        game.draw(win, font, small_font)
 
-        # --- Game Over Screen ---
         if game.is_game_over():
-            # Create a semi-transparent overlay
             overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 180))
             win.blit(overlay, (0, 0))
             
             black_score, white_score = game.get_score()
-            if black_score > white_score:
-                winner_text = "Black Wins!"
-            elif white_score > black_score:
-                winner_text = "White Wins!"
-            else:
-                winner_text = "It's a Tie!"
+            winner_text = "Black Wins!" if black_score > white_score else "White Wins!" if white_score > black_score else "It's a Tie!"
             
             end_text = big_font.render(winner_text, True, WHITE)
             end_rect = end_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 30))
