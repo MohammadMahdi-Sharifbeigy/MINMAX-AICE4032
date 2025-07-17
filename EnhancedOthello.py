@@ -516,22 +516,23 @@ def draw_gradient_background(win, color1, color2):
 def main_menu(win, font, big_font):
     """ Displays the main menu and handles mode/difficulty selection. """
     # Main menu buttons
-    pvp_button = pygame.Rect(WIDTH // 2 - 150, 300, 300, 60)
-    pvb_button = pygame.Rect(WIDTH // 2 - 150, 380, 300, 60)
-    bvb_button = pygame.Rect(WIDTH // 2 - 150, 460, 300, 60)
+    pvp_button = pygame.Rect(WIDTH // 2 - 150, 280, 300, 60)
+    pvb_button = pygame.Rect(WIDTH // 2 - 150, 350, 300, 60)
+    bvb_button = pygame.Rect(WIDTH // 2 - 150, 420, 300, 60)
+    quit_button = pygame.Rect(WIDTH // 2 - 150, 490, 300, 60)
     
     # Difficulty buttons
     diff_buttons = {
-        Difficulty.EASY: pygame.Rect(WIDTH // 2 - 225, 600, 100, 40),
-        Difficulty.MEDIUM: pygame.Rect(WIDTH // 2 - 110, 600, 100, 40),
-        Difficulty.HARD: pygame.Rect(WIDTH // 2 + 5, 600, 100, 40),
-        Difficulty.EXPERT: pygame.Rect(WIDTH // 2 + 120, 600, 100, 40),
+        Difficulty.EASY: pygame.Rect(WIDTH // 2 - 225, 610, 100, 40),
+        Difficulty.MEDIUM: pygame.Rect(WIDTH // 2 - 110, 610, 100, 40),
+        Difficulty.HARD: pygame.Rect(WIDTH // 2 + 5, 610, 100, 40),
+        Difficulty.EXPERT: pygame.Rect(WIDTH // 2 + 120, 610, 100, 40),
     }
 
     # Color choice buttons (for PvB)
-    play_as_black_button = pygame.Rect(WIDTH // 2 - 220, 380, 200, 60)
-    play_as_white_button = pygame.Rect(WIDTH // 2 + 20, 380, 200, 60)
-    back_button = pygame.Rect(WIDTH // 2 - 75, 460, 150, 50)
+    play_as_black_button = pygame.Rect(WIDTH // 2 - 220, 350, 200, 60)
+    play_as_white_button = pygame.Rect(WIDTH // 2 + 20, 350, 200, 60)
+    back_button = pygame.Rect(WIDTH // 2 - 75, 420, 150, 50)
     
     global AI_DIFFICULTY
     clock = pygame.time.Clock()
@@ -553,6 +554,7 @@ def main_menu(win, font, big_font):
             draw_button(win, pvp_button, "Player vs Player", font, BLUE, WHITE, DARK_BLUE, (100, 160, 200))
             draw_button(win, pvb_button, "Player vs Bot", font, BLUE, WHITE, DARK_BLUE, (100, 160, 200))
             draw_button(win, bvb_button, "Bot vs Bot", font, BLUE, WHITE, DARK_BLUE, (100, 160, 200))
+            draw_button(win, quit_button, "Quit", font, RED, WHITE, DARK_BLUE, (255, 80, 80))
         
         elif menu_state == "choose_color":
             subtitle_text = font.render("Choose your color", True, WHITE)
@@ -564,7 +566,7 @@ def main_menu(win, font, big_font):
 
         # Difficulty selection is always visible
         diff_text = font.render("AI Difficulty:", True, WHITE)
-        win.blit(diff_text, (WIDTH // 2 - diff_text.get_width() // 2, 560))
+        win.blit(diff_text, (WIDTH // 2 - diff_text.get_width() // 2, 570))
         for diff, button in diff_buttons.items():
             color = ORANGE if AI_DIFFICULTY == diff else GRAY
             border = GOLD if AI_DIFFICULTY == diff else DARK_GRAY
@@ -578,6 +580,7 @@ def main_menu(win, font, big_font):
                     if pvp_button.collidepoint(event.pos): return "PvP", None
                     if pvb_button.collidepoint(event.pos): menu_state = "choose_color"
                     if bvb_button.collidepoint(event.pos): return "BvB", None
+                    if quit_button.collidepoint(event.pos): pygame.quit(); sys.exit()
                 elif menu_state == "choose_color":
                     if play_as_black_button.collidepoint(event.pos): return "PvB", PLAYER_BLACK
                     if play_as_white_button.collidepoint(event.pos): return "PvB", PLAYER_WHITE
@@ -592,10 +595,10 @@ def main_menu(win, font, big_font):
         clock.tick(60)
 
 def ai_move_thread_worker(game):
-    """ The actual work for the AI thread to keep the UI responsive. """
-    game.ai_thinking = True
-    game.ai_decision_log = []
-    
+    """ 
+    The actual work for the AI thread. It does NOT modify game state directly,
+    only posts an event with the result. This prevents race conditions.
+    """
     try:
         total_pieces = sum(row.count(PLAYER_BLACK) + row.count(PLAYER_WHITE) for row in game.board)
         _, best_move, evaluated_moves = minimax_alphabeta(
@@ -607,8 +610,7 @@ def ai_move_thread_worker(game):
             pygame.event.post(pygame.event.Event(pygame.USEREVENT, {'move': best_move}))
     except Exception as e:
         print(f"AI Error: {e}")
-    finally:
-        game.ai_thinking = False
+    # This thread no longer touches the game.ai_thinking flag.
 
 def game_over_screen(win, font, big_font, winner, final_score):
     """ Displays the game over screen with results and options. """
@@ -644,10 +646,44 @@ def game_over_screen(win, font, big_font, winner, final_score):
         pygame.display.flip()
         pygame.time.wait(100)
 
+def pause_screen(win, font, big_font):
+    """ Displays a pause screen with options to resume or go to menu. """
+    overlay = pygame.Surface((WIDTH, HEIGHT))
+    overlay.set_alpha(200)
+    overlay.fill(BLACK)
+    win.blit(overlay, (0, 0))
+
+    paused_text = big_font.render("Game Paused", True, GOLD)
+    win.blit(paused_text, (WIDTH // 2 - paused_text.get_width() // 2, 250))
+
+    resume_button = pygame.Rect(WIDTH // 2 - 200, 450, 180, 50)
+    main_menu_button = pygame.Rect(WIDTH // 2 + 20, 450, 180, 50)
+
+    while True:
+        draw_button(win, resume_button, "Resume", font, GREEN, WHITE, DARK_GREEN, (100, 200, 100))
+        draw_button(win, main_menu_button, "Main Menu", font, BLUE, WHITE, DARK_BLUE, (100, 160, 200))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE: # Press ESC again to resume
+                    return "resume"
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if resume_button.collidepoint(event.pos):
+                    return "resume"
+                if main_menu_button.collidepoint(event.pos):
+                    return "main_menu"
+
+        pygame.display.flip()
+        pygame.time.wait(100)
+
 class GameState(Enum):
     MENU = 1
     PLAYING = 2
     GAME_OVER = 3
+    PAUSED = 4
 
 def main():
     """ Main game function that orchestrates everything using a state machine. """
@@ -671,31 +707,51 @@ def main():
             game_mode, human_color = main_menu(win, font, big_font)
             game = Othello()
             game_state = GameState.PLAYING
+            # If AI is starting, trigger its first move
+            if (game_mode == "BvB") or (game_mode == "PvB" and human_color != game.current_player):
+                if not game.ai_thinking and game.valid_moves:
+                    game.ai_thinking = True
+                    threading.Thread(target=ai_move_thread_worker, args=(game,)).start()
 
         elif game_state == GameState.PLAYING:
-            is_human_turn = False
-            if game_mode == "PvP":
-                is_human_turn = True
-            elif game_mode == "PvB":
-                is_human_turn = (game.current_player == human_color)
+            is_human_turn = (game_mode == "PvP") or \
+                            (game_mode == "PvB" and game.current_player == human_color)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    game_state = GameState.MENU
+                    game_state = GameState.PAUSED
 
+                # This event is posted by the AI thread when its move is ready
                 if event.type == pygame.USEREVENT:
-                    game.make_move(event.move[0], event.move[1])
+                    made_move = game.make_move(event.move[0], event.move[1])
+                    game.ai_thinking = False # Set flag to false AFTER move is made.
+                    # If it's still an AI's turn (BvB or a pass occurred), trigger next AI move
+                    if made_move and not game.game_over:
+                        is_still_ai_turn = (game_mode == "BvB") or \
+                                           (game_mode == "PvB" and game.current_player != human_color)
+                        if is_still_ai_turn and not game.ai_thinking and game.valid_moves:
+                            game.ai_thinking = True
+                            threading.Thread(target=ai_move_thread_worker, args=(game,)).start()
 
-                if event.type == pygame.MOUSEBUTTONDOWN and is_human_turn and not game.ai_thinking:
+                # This handles a human player's click
+                if is_human_turn and event.type == pygame.MOUSEBUTTONDOWN and not game.ai_thinking:
                     x, y = event.pos
                     if BOARD_X <= x < BOARD_X + BOARD_SIZE and BOARD_Y <= y < BOARD_Y + BOARD_SIZE:
                         col = (x - BOARD_X) // SQUARE_SIZE
                         row = (y - BOARD_Y) // SQUARE_SIZE
-                        game.make_move(row, col)
+                        made_move = game.make_move(row, col)
+                        # After human moves, trigger AI if it's its turn
+                        if made_move and not game.game_over:
+                            is_now_ai_turn = (game_mode == "BvB") or \
+                                             (game_mode == "PvB" and game.current_player != human_color)
+                            if is_now_ai_turn and not game.ai_thinking and game.valid_moves:
+                                game.ai_thinking = True
+                                threading.Thread(target=ai_move_thread_worker, args=(game,)).start()
                 
+                # This handles the hover effect
                 if event.type == pygame.MOUSEMOTION:
                     x, y = event.pos
                     if BOARD_X <= x < BOARD_X + BOARD_SIZE and BOARD_Y <= y < BOARD_Y + BOARD_SIZE:
@@ -703,20 +759,31 @@ def main():
                     else:
                         game.hover_pos = None
             
-            if not is_human_turn and not game.game_over and not game.ai_thinking and game.valid_moves:
-                threading.Thread(target=ai_move_thread_worker, args=(game,)).start()
-            
+            # Drawing
             win.fill(DARK_GREEN)
             game.draw(win, font, small_font)
             
             if game.game_over:
                 game_state = GameState.GAME_OVER
 
+        elif game_state == GameState.PAUSED:
+            result = pause_screen(win, font, big_font)
+            if result == "resume":
+                game_state = GameState.PLAYING
+            elif result == "main_menu":
+                game_state = GameState.MENU
+
         elif game_state == GameState.GAME_OVER:
             result = game_over_screen(win, font, big_font, game.winner, game.get_score())
             if result == "play_again":
+                # Keep current game_mode and human_color, just reset the board
                 game = Othello()
                 game_state = GameState.PLAYING
+                # If AI is starting, trigger its first move
+                if (game_mode == "BvB") or (game_mode == "PvB" and human_color != game.current_player):
+                    if not game.ai_thinking and game.valid_moves:
+                        game.ai_thinking = True
+                        threading.Thread(target=ai_move_thread_worker, args=(game,)).start()
             else: # main_menu
                 game_state = GameState.MENU
 
