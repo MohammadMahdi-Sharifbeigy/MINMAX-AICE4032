@@ -61,7 +61,7 @@ AI_DIFFICULTY = Difficulty.MEDIUM
 
 class Othello:
     """ Manages the entire game state, logic, and rendering. """
-    def __init__(self):
+    def __init__(self, sounds):
         self.board = [[EMPTY for _ in range(8)] for _ in range(8)]
         self.board[3][3], self.board[4][4] = PLAYER_WHITE, PLAYER_WHITE
         self.board[3][4], self.board[4][3] = PLAYER_BLACK, PLAYER_BLACK
@@ -75,6 +75,15 @@ class Othello:
         self.winner = None
         self.animations = []
         self.hover_pos = None
+        self.sounds = sounds
+
+    def copy(self):
+        """Creates a copy of the game state for AI simulation, excluding non-serializable parts like sounds."""
+        new_game = Othello(sounds={})  # Create new instance with no sounds
+        new_game.board = copy.deepcopy(self.board)
+        new_game.current_player = self.current_player
+        new_game.valid_moves = new_game.get_valid_moves(new_game.current_player)
+        return new_game
 
     def is_on_board(self, r, c):
         """ Check if a coordinate is on the 8x8 board. """
@@ -112,15 +121,20 @@ class Othello:
             self.move_history.append(copy.deepcopy(self.board))
             self.board[r][c] = self.current_player
             self.last_move = (r, c)
+            if self.sounds.get('place'):
+                self.sounds['place'].play()
             
             pieces_to_flip = self.valid_moves[(r, c)]
-            for piece_pos in pieces_to_flip:
+            for i, piece_pos in enumerate(pieces_to_flip):
                 self.board[piece_pos[0]][piece_pos[1]] = self.current_player
                 # Add a flip animation for each piece
                 self.animations.append({
-                    'type': 'flip', 'pos': piece_pos, 'start_time': time.time(),
+                    'type': 'flip', 'pos': piece_pos, 'start_time': time.time() + i * 0.05, # Stagger animations
                     'duration': 0.4, 'from_player': -self.current_player, 'to_player': self.current_player
                 })
+                if self.sounds.get('flip') and i % 2 == 0: # Play sound for every other flip to avoid cacophony
+                    self.sounds['flip'].play()
+
 
             self._switch_player()
             return True
@@ -186,8 +200,9 @@ class Othello:
         # Filter out completed animations and draw active ones
         self.animations = [anim for anim in self.animations if current_time - anim['start_time'] < anim['duration']]
         for anim in self.animations:
-            progress = (current_time - anim['start_time']) / anim['duration']
-            self._draw_animated_piece(win, anim, progress)
+            if current_time >= anim['start_time']:
+                progress = (current_time - anim['start_time']) / anim['duration']
+                self._draw_animated_piece(win, anim, progress)
 
     def _draw_piece(self, win, r, c, player, radius_mod=0, custom_pos=None):
         """ Draws a single, anti-aliased piece with a subtle 3D effect. """
@@ -380,7 +395,7 @@ def dynamic_evaluate_board(board, player, total_pieces):
     score += piece_weight * (my_pieces - opp_pieces)
 
     # 2. Mobility
-    temp_game = Othello()
+    temp_game = Othello(sounds={}) # Pass empty sounds dict for evaluation
     temp_game.board = board
     my_moves = len(temp_game.get_valid_moves(player))
     opp_moves = len(temp_game.get_valid_moves(opponent))
@@ -450,7 +465,7 @@ def minimax_alphabeta(game_state, depth, alpha, beta, maximizing_player, ai_play
 
     valid_moves = game_state.valid_moves
     if not valid_moves:
-        next_state = copy.deepcopy(game_state)
+        next_state = game_state.copy()
         next_state._switch_player() # Pass turn
         return minimax_alphabeta(next_state, depth - 1, alpha, beta, not maximizing_player, ai_player, total_pieces)
 
@@ -460,7 +475,7 @@ def minimax_alphabeta(game_state, depth, alpha, beta, maximizing_player, ai_play
     if maximizing_player:
         max_eval = -math.inf
         for move in valid_moves:
-            next_state = copy.deepcopy(game_state)
+            next_state = game_state.copy()
             next_state.make_move(move[0], move[1])
             evaluation, _, _ = minimax_alphabeta(next_state, depth - 1, alpha, beta, False, ai_player, total_pieces + 1)
             evaluated_moves.append((evaluation, move))
@@ -474,7 +489,7 @@ def minimax_alphabeta(game_state, depth, alpha, beta, maximizing_player, ai_play
     else: # Minimizing player
         min_eval = math.inf
         for move in valid_moves:
-            next_state = copy.deepcopy(game_state)
+            next_state = game_state.copy()
             next_state.make_move(move[0], move[1])
             evaluation, _, _ = minimax_alphabeta(next_state, depth - 1, alpha, beta, True, ai_player, total_pieces + 1)
             evaluated_moves.append((evaluation, move))
@@ -687,7 +702,21 @@ class GameState(Enum):
 
 def main():
     """ Main game function that orchestrates everything using a state machine. """
+    pygame.mixer.pre_init(44100, -16, 2, 512)
     pygame.init()
+    
+    # --- Load Sounds ---
+    sounds = {}
+    try:
+        # NOTE: You must provide these audio files in the same directory
+        pygame.mixer.music.load('menu_music.mp3')
+        pygame.mixer.music.set_volume(0.5)
+        sounds['place'] = pygame.mixer.Sound('place_sound.wav')
+        sounds['flip'] = pygame.mixer.Sound('flip_sound.mp3')
+    except pygame.error as e:
+        print(f"Warning: Could not load sound files. Game will run without audio. Error: {e}")
+        # The game will continue without sounds if files are missing.
+
     win = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Polished Othello AI")
     
@@ -704,9 +733,23 @@ def main():
 
     while True:
         if game_state == GameState.MENU:
+            if not pygame.mixer.music.get_busy():
+                 try:
+                    pygame.mixer.music.load('menu_music.mp3')
+                    pygame.mixer.music.play(-1)
+                 except pygame.error: pass
             game_mode, human_color = main_menu(win, font, big_font)
-            game = Othello()
+            game = Othello(sounds)
             game_state = GameState.PLAYING
+            
+            # Switch to game music
+            pygame.mixer.music.stop()
+            try:
+                pygame.mixer.music.load('game_music.mp3')
+                pygame.mixer.music.play(-1)
+            except pygame.error:
+                pass # Game music is optional
+
             # If AI is starting, trigger its first move
             if (game_mode == "BvB") or (game_mode == "PvB" and human_color != game.current_player):
                 if not game.ai_thinking and game.valid_moves:
@@ -723,6 +766,7 @@ def main():
                     sys.exit()
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     game_state = GameState.PAUSED
+                    pygame.mixer.music.pause()
 
                 # This event is posted by the AI thread when its move is ready
                 if event.type == pygame.USEREVENT:
@@ -770,14 +814,17 @@ def main():
             result = pause_screen(win, font, big_font)
             if result == "resume":
                 game_state = GameState.PLAYING
+                pygame.mixer.music.unpause()
             elif result == "main_menu":
                 game_state = GameState.MENU
+                pygame.mixer.music.stop()
+
 
         elif game_state == GameState.GAME_OVER:
             result = game_over_screen(win, font, big_font, game.winner, game.get_score())
             if result == "play_again":
                 # Keep current game_mode and human_color, just reset the board
-                game = Othello()
+                game = Othello(sounds)
                 game_state = GameState.PLAYING
                 # If AI is starting, trigger its first move
                 if (game_mode == "BvB") or (game_mode == "PvB" and human_color != game.current_player):
@@ -786,6 +833,8 @@ def main():
                         threading.Thread(target=ai_move_thread_worker, args=(game,)).start()
             else: # main_menu
                 game_state = GameState.MENU
+                pygame.mixer.music.stop()
+
 
         pygame.display.flip()
         clock.tick(60)
