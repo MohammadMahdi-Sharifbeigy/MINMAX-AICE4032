@@ -12,7 +12,7 @@ import random
 # 1.Constants and Setup
 # =============================================================================
 
-# --- Screen Dimensions (Optimized for better fit) ---
+# --- Screen Dimensions---
 WIDTH, HEIGHT = 1200, 800
 BOARD_SIZE = 560
 SQUARE_SIZE = BOARD_SIZE // 8
@@ -23,7 +23,7 @@ DEBUG_PANEL_WIDTH = 380
 STATS_PANEL_X = DEBUG_PANEL_X + DEBUG_PANEL_WIDTH + 15
 STATS_PANEL_WIDTH = 180
 
-# --- Enhanced Color Palette ---
+# --- Color Palette ---
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (34, 139, 34)
@@ -52,7 +52,7 @@ PLAYER_WHITE = -1
 EMPTY = 0
 DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
-# --- Enhanced AI Settings ---
+# --- AI Settings ---
 class Difficulty(Enum):
     EASY = 2
     MEDIUM = 4
@@ -201,16 +201,13 @@ class Othello:
             self.winner = EMPTY
 
     def get_mobility_score(self, player):
-        """Calculate mobility advantage for a player."""
         return len(self.get_valid_moves(player))
 
     def get_corner_score(self, player):
-        """Calculate corner control for a player."""
         corners = [(0, 0), (0, 7), (7, 0), (7, 7)]
         return sum(1 for r, c in corners if self.board[r][c] == player)
 
     def get_edge_score(self, player):
-        """Calculate edge control for a player."""
         edges = [(i, 0) for i in range(8)] + [(i, 7) for i in range(8)] + \
                 [(0, i) for i in range(1, 7)] + [(7, i) for i in range(1, 7)]
         return sum(1 for r, c in edges if self.board[r][c] == player)
@@ -221,29 +218,24 @@ class Othello:
         self._draw_smart_indicators(win)
         self.draw_enhanced_hud(win, font, small_font)
         
-        # Only show AI panel and stats for AI games
         if game_mode == "PvB" or game_mode == "BvB":
             self.draw_ai_analysis_panel(win, font, small_font)
             self.draw_statistics_panel(win, font, small_font)
         elif game_mode == "PvP":
-            # For PvP, show a simpler statistics panel in the right area
             self.draw_pvp_stats_panel(win, font, small_font)
 
     def draw_pvp_stats_panel(self, win, font, small_font):
         """Simple statistics panel for Player vs Player games."""
         panel_rect = pygame.Rect(DEBUG_PANEL_X, BOARD_Y, DEBUG_PANEL_WIDTH, BOARD_SIZE)
         
-        # Panel background
         pygame.draw.rect(win, DARK_GRAY, panel_rect, border_radius=15)
         pygame.draw.rect(win, GOLD, panel_rect, 3, border_radius=15)
         
-        # Title
         title_text = font.render("Game Stats", True, GOLD)
         win.blit(title_text, (DEBUG_PANEL_X + 20, BOARD_Y + 20))
         
         y_offset = BOARD_Y + 80
         
-        # Game statistics for PvP
         black_score, white_score = self.get_score()
         stats = [
             ("Current Turn:", str(self.turn_count)),
@@ -262,7 +254,7 @@ class Othello:
         ]
         
         for label, value in stats:
-            if label == "":  # Empty line for spacing
+            if label == "": 
                 y_offset += 15
                 continue
                 
@@ -277,8 +269,6 @@ class Othello:
             y_offset += 25
 
     def _draw_enhanced_board(self, win):
-        """Draw board with gradient effects and better styling."""
-        # Outer border with gradient effect
         for i in range(5):
             border_rect = pygame.Rect(BOARD_X - 15 + i, BOARD_Y - 15 + i, 
                                     BOARD_SIZE + 30 - 2*i, BOARD_SIZE + 30 - 2*i)
@@ -286,12 +276,10 @@ class Othello:
             border_color = (color_intensity, color_intensity//2, 19)
             pygame.draw.rect(win, border_color, border_rect, border_radius=20-i)
         
-        # Board squares with enhanced styling
         for r in range(8):
             for c in range(8):
                 x, y = BOARD_X + c * SQUARE_SIZE, BOARD_Y + r * SQUARE_SIZE
                 
-                # Checkerboard pattern with subtle gradient
                 base_color = BOARD_BG_LIGHT if (r + c) % 2 == 0 else BOARD_BG_DARK
                 if (r + c) % 2 == 0:
                     color = (
@@ -308,20 +296,16 @@ class Othello:
                 
                 pygame.draw.rect(win, color, (x, y, SQUARE_SIZE, SQUARE_SIZE))
                 
-                # Subtle grid lines
                 pygame.draw.rect(win, (30, 30, 30), (x, y, SQUARE_SIZE, SQUARE_SIZE), 1)
                 
-                # Highlight last move with pulsing effect
                 if self.last_move == (r, c):
                     pulse = int(30 + 25 * math.sin(time.time() * 4))
-                    # Create a surface for the highlight effect with transparency
                     highlight_surface = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE), pygame.SRCALPHA)
                     highlight_surface.fill((255, 215, 0, pulse))
                     win.blit(highlight_surface, (x, y))
                     pygame.draw.rect(win, (255, 215, 0), (x, y, SQUARE_SIZE, SQUARE_SIZE), 4)
 
     def _draw_pieces_with_effects(self, win):
-        """Enhanced piece rendering with shadows and highlights."""
         active_animated_pieces = {anim['pos'] for anim in self.animations}
         
         for r in range(8):
@@ -329,7 +313,6 @@ class Othello:
                 if self.board[r][c] != EMPTY and (r, c) not in active_animated_pieces:
                     self._draw_enhanced_piece(win, r, c, self.board[r][c])
                     
-        # Update and draw animations
         current_time = time.time()
         self.animations = [anim for anim in self.animations 
                           if current_time - anim['start_time'] < anim['duration']]
@@ -340,7 +323,6 @@ class Othello:
                 self._draw_animated_piece(win, anim, progress)
 
     def _draw_enhanced_piece(self, win, r, c, player, radius_mod=0, custom_pos=None):
-        """Draw piece with enhanced 3D effects and reflections."""
         if custom_pos:
             center_x, center_y = custom_pos
         else:
@@ -348,10 +330,9 @@ class Othello:
             center_y = BOARD_Y + r * SQUARE_SIZE + SQUARE_SIZE // 2
         
         radius = SQUARE_SIZE // 2 - 10 + radius_mod
-        if radius <= 5:  # Ensure minimum radius to prevent errors
+        if radius <= 5: 
             return
 
-        # Enhanced colors and effects
         if player == PLAYER_BLACK:
             main_color = (20, 20, 20)
             shadow_color = (0, 0, 0, 120)
@@ -363,7 +344,6 @@ class Othello:
             highlight_color = (255, 255, 255)
             rim_color = (200, 200, 200)
         
-        # Multi-layer shadow for depth
         for i in range(3):
             shadow_surface = pygame.Surface((radius*2 + i*2, radius*2 + i*2), pygame.SRCALPHA)
             shadow_alpha = 40 - i*10
@@ -372,38 +352,30 @@ class Othello:
                                            radius, (*shadow_color[:3], shadow_alpha))
                 win.blit(shadow_surface, (center_x - radius + 4 + i, center_y - radius + 4 + i))
 
-        # Main piece with gradient effect
         pygame.gfxdraw.filled_circle(win, center_x, center_y, radius, main_color)
         
-        # Only draw rim and inner circle if radius is large enough
         if radius > 4:
             pygame.gfxdraw.filled_circle(win, center_x, center_y, max(2, radius-2), rim_color)
         if radius > 6:
             pygame.gfxdraw.filled_circle(win, center_x, center_y, max(1, radius-4), main_color)
         
-        # Highlight for 3D effect
         if radius > 8:
             highlight_radius = max(1, radius // 3)
             pygame.gfxdraw.filled_circle(win, center_x - radius//4, center_y - radius//4, 
                                        highlight_radius, highlight_color)
         
-        # Anti-aliased edge
         pygame.gfxdraw.aacircle(win, center_x, center_y, radius, (0, 0, 0))
 
     def _draw_animated_piece(self, win, anim, progress):
-        """Enhanced flip animation with rotation effect."""
         r, c = anim['pos']
         
         if progress < 0.5:
-            # Shrinking phase
             scale = 1 - (progress * 2)
             player = anim['from_player']
         else:
-            # Growing phase
             scale = (progress - 0.5) * 2
             player = anim['to_player']
         
-        # Add rotation effect
         rotation_angle = progress * math.pi
         scale_x = abs(math.cos(rotation_angle)) * scale
         
@@ -411,14 +383,11 @@ class Othello:
         self._draw_enhanced_piece(win, r, c, player, radius_mod)
 
     def _draw_smart_indicators(self, win):
-        """Intelligent move indicators with contextual information."""
-        # Hover preview
         if self.hover_pos and self.hover_pos in self.valid_moves:
             r, c = self.hover_pos
             center_x = BOARD_X + c * SQUARE_SIZE + SQUARE_SIZE // 2
             center_y = BOARD_Y + r * SQUARE_SIZE + SQUARE_SIZE // 2
             
-            # Preview piece with transparency
             preview_color = (*((20, 20, 20) if self.current_player == PLAYER_BLACK 
                              else (245, 245, 245)), 120)
             radius = SQUARE_SIZE // 2 - 12
@@ -427,19 +396,16 @@ class Othello:
             pygame.gfxdraw.filled_circle(surface, radius, radius, radius, preview_color)
             win.blit(surface, (center_x - radius, center_y - radius))
             
-            # Show number of pieces that would be flipped
             flip_count = len(self.valid_moves[self.hover_pos])
             if flip_count > 0:
                 font = pygame.font.Font(None, 24)
                 flip_text = font.render(f"+{flip_count}", True, GOLD)
                 win.blit(flip_text, (center_x + 20, center_y - 30))
 
-        # Valid move indicators with strategic value
         for (r, c), pieces_to_flip in self.valid_moves.items():
             center_x = BOARD_X + c * SQUARE_SIZE + SQUARE_SIZE // 2
             center_y = BOARD_Y + r * SQUARE_SIZE + SQUARE_SIZE // 2
             
-            # Color based on move quality
             flip_count = len(pieces_to_flip)
             position_value = POSITION_VALUES[r][c]
             
@@ -456,7 +422,6 @@ class Othello:
                 color = CYAN if self.current_player == PLAYER_BLACK else CORAL
                 base_radius = 8
             
-            # Pulsing animation
             time_factor = (time.time() * 2) % (2 * math.pi)
             pulse = math.sin(time_factor)
             alpha = int(100 + 60 * pulse)
@@ -467,11 +432,8 @@ class Othello:
             win.blit(surface, (center_x - radius, center_y - radius))
 
     def draw_enhanced_hud(self, win, font, small_font):
-        """Enhanced HUD with more information and better styling."""
-        # Main HUD background with gradient
         hud_rect = pygame.Rect(BOARD_X, 10, BOARD_SIZE, 100)
         
-        # Gradient background
         for i in range(hud_rect.height):
             ratio = i / hud_rect.height
             r = int(DARK_GRAY[0] * (1-ratio) + (DARK_GRAY[0]+20) * ratio)
@@ -485,15 +447,12 @@ class Othello:
         
         black_score, white_score = self.get_score()
         
-        # Enhanced score display
         score_y = hud_rect.y + 30
         
-        # Black player section
         self._draw_enhanced_piece(win, -1, -1, PLAYER_BLACK, custom_pos=(BOARD_X + 60, score_y))
         score_text = font.render(f"{black_score}", True, WHITE)
         win.blit(score_text, (BOARD_X + 100, score_y - score_text.get_height() // 2))
         
-        # Black player stats
         black_mobility = len(self.get_valid_moves(PLAYER_BLACK))
         black_corners = self.get_corner_score(PLAYER_BLACK)
         stats_font = pygame.font.Font(None, 20)
@@ -502,12 +461,10 @@ class Othello:
         win.blit(mobility_text, (BOARD_X + 100, score_y + 15))
         win.blit(corner_text, (BOARD_X + 100, score_y + 30))
         
-        # White player section
         self._draw_enhanced_piece(win, -1, -1, PLAYER_WHITE, custom_pos=(BOARD_X + BOARD_SIZE - 60, score_y))
         score_text = font.render(f"{white_score}", True, WHITE)
         win.blit(score_text, (BOARD_X + BOARD_SIZE - 140, score_y - score_text.get_height() // 2))
         
-        # White player stats
         white_mobility = len(self.get_valid_moves(PLAYER_WHITE))
         white_corners = self.get_corner_score(PLAYER_WHITE)
         mobility_text = stats_font.render(f"Moves: {white_mobility}", True, CYAN)
@@ -515,19 +472,16 @@ class Othello:
         win.blit(mobility_text, (BOARD_X + BOARD_SIZE - 140, score_y + 15))
         win.blit(corner_text, (BOARD_X + BOARD_SIZE - 140, score_y + 30))
         
-        # Turn indicator
         if not self.game_over:
             turn_text = "Black's Turn" if self.current_player == PLAYER_BLACK else "White's Turn"
             color = NEON_GREEN if self.current_player == PLAYER_BLACK else ORANGE
             
-            # Pulsing effect for current player
             pulse = int(200 + 55 * math.sin(time.time() * 3))
             text_color = (pulse, pulse, pulse)
             
             text_surface = font.render(turn_text, True, text_color)
             text_rect = text_surface.get_rect(center=(hud_rect.centerx, hud_rect.y + 70))
             
-            # Background with glow effect
             bg_rect = text_rect.inflate(40, 20)
             glow_surface = pygame.Surface((bg_rect.width + 10, bg_rect.height + 10), pygame.SRCALPHA)
             pygame.gfxdraw.box(glow_surface, glow_surface.get_rect(), (*color[:3], 30))
@@ -537,10 +491,8 @@ class Othello:
             win.blit(text_surface, text_rect)
 
     def draw_ai_analysis_panel(self, win, font, small_font):
-        """Enhanced AI analysis panel with detailed information."""
         panel_rect = pygame.Rect(DEBUG_PANEL_X, BOARD_Y, DEBUG_PANEL_WIDTH, BOARD_SIZE)
         
-        # Gradient background
         for i in range(panel_rect.height):
             ratio = i / panel_rect.height
             r = int(DARK_GRAY[0] * (1-ratio) + (DARK_GRAY[0]+15) * ratio)
@@ -552,14 +504,12 @@ class Othello:
         
         pygame.draw.rect(win, DEEP_PURPLE, panel_rect, 3, border_radius=15)
         
-        # Title and difficulty
         title_text = font.render("AI Brain", True, GOLD)
         win.blit(title_text, (DEBUG_PANEL_X + 20, BOARD_Y + 15))
         
         diff_text = small_font.render(f"Level: {AI_DIFFICULTY.name} (Depth {AI_DIFFICULTY.value})", True, CYAN)
         win.blit(diff_text, (DEBUG_PANEL_X + 20, BOARD_Y + 45))
         
-        # AI thinking indicator
         if self.ai_thinking:
             thinking_dots = "." * ((int(time.time() * 3) % 3) + 1)
             status_text = small_font.render(f"Thinking{thinking_dots}", True, ORANGE)
@@ -575,7 +525,6 @@ class Othello:
             win.blit(status_text, (DEBUG_PANEL_X + 20, y_offset))
             return
         
-        # Column headers
         headers = ["#", "Move", "Score", "Evaluation"]
         x_positions = [DEBUG_PANEL_X + 25, DEBUG_PANEL_X + 50, DEBUG_PANEL_X + 120, DEBUG_PANEL_X + 200]
         
@@ -585,7 +534,6 @@ class Othello:
         
         y_offset += 25
         
-        # Move analysis
         max_score = max(abs(s) for s, m in self.ai_decision_log) if self.ai_decision_log else 1
         
         for i, (score, move) in enumerate(self.ai_decision_log[:15]):
@@ -594,18 +542,15 @@ class Othello:
             
             is_best_move = (i == 0)
             
-            # Row background
             row_color = (80, 50, 120) if is_best_move else (50, 50, 70)
             line_rect = pygame.Rect(DEBUG_PANEL_X + 15, y_offset - 2, DEBUG_PANEL_WIDTH - 30, 22)
             pygame.draw.rect(win, row_color, line_rect, border_radius=5)
             
-            # Move data
             move_notation = chr(ord('A') + move[1]) + str(move[0] + 1)
             rank_text = f"{i+1}"
             
             text_color = GOLD if is_best_move else WHITE
             
-            # Display information
             rank_surf = small_font.render(rank_text, True, text_color)
             move_surf = small_font.render(move_notation, True, text_color)
             score_surf = small_font.render(f"{score:.1f}", True, text_color)
@@ -614,16 +559,13 @@ class Othello:
             win.blit(move_surf, (x_positions[1], y_offset))
             win.blit(score_surf, (x_positions[2], y_offset))
             
-            # Visual score bar
             bar_x = x_positions[3]
             bar_y = y_offset + 4
             bar_width = 180
             bar_height = 12
             
-            # Background bar
             pygame.draw.rect(win, (20, 20, 20), (bar_x, bar_y, bar_width, bar_height), border_radius=6)
             
-            # Score visualization
             normalized_score = score / max_score if max_score != 0 else 0
             fill_width = int((bar_width / 2) * abs(normalized_score))
             bar_mid = bar_x + bar_width // 2
@@ -638,20 +580,16 @@ class Othello:
             y_offset += 25
 
     def draw_statistics_panel(self, win, font, small_font):
-        """Draw game statistics panel."""
         panel_rect = pygame.Rect(STATS_PANEL_X, BOARD_Y, STATS_PANEL_WIDTH, BOARD_SIZE)
         
-        # Panel background
         pygame.draw.rect(win, DARK_GRAY, panel_rect, border_radius=10)
         pygame.draw.rect(win, SILVER, panel_rect, 2, border_radius=10)
         
-        # Title
         title_text = font.render("Stats", True, GOLD)
         win.blit(title_text, (STATS_PANEL_X + 10, BOARD_Y + 15))
         
         y_offset = BOARD_Y + 60
         
-        # Game statistics
         stats = [
             ("Turn:", str(self.turn_count)),
             ("Total Pieces:", str(sum(self.get_score()))),
@@ -676,12 +614,9 @@ class Othello:
 # =============================================================================
 
 def advanced_evaluate_board(board, player, total_pieces, depth_remaining=0):
-    """
-    Advanced evaluation function with multiple strategic factors.
-    """
+
     opponent = -player
     
-    # Dynamic phase detection
     if total_pieces < 20:  # Opening
         phase_weights = {
             'piece': 1, 'mobility': 20, 'corner': 150, 'edge': 10,
@@ -787,7 +722,6 @@ def advanced_evaluate_board(board, player, total_pieces, depth_remaining=0):
     return score
 
 def count_advanced_stable_pieces(board, player):
-    """Advanced stability calculation considering multiple factors."""
     stable_count = 0
     
     for r in range(8):
@@ -795,12 +729,10 @@ def count_advanced_stable_pieces(board, player):
             if board[r][c] == player:
                 stability_score = 0
                 
-                # Corner pieces are always stable
                 if (r, c) in [(0, 0), (0, 7), (7, 0), (7, 7)]:
                     stable_count += 1
                     continue
                 
-                # Edge stability
                 if r == 0 or r == 7 or c == 0 or c == 7:
                     edge_stable = True
                     if r == 0 or r == 7:  # Top/bottom edge
@@ -869,7 +801,7 @@ def evaluate_patterns(board, player):
         if board[corner_r][corner_c] == EMPTY:
             for ar, ac in adjacent_squares:
                 if board[ar][ac] == player:
-                    score -= 10  # Penalty for C-square occupation
+                    score -= 10 
     
     # Wall patterns (edges controlled by one player)
     for edge in [0, 7]:  # Top and bottom edges
@@ -887,10 +819,6 @@ def evaluate_patterns(board, player):
     return score
 
 def enhanced_minimax_alphabeta(game_state, depth, alpha, beta, maximizing_player, ai_player, total_pieces, start_time, time_limit=10.0):
-    """
-    Enhanced minimax with time management and move ordering.
-    """
-    # Time management
     if time.time() - start_time > time_limit:
         return advanced_evaluate_board(game_state.board, ai_player, total_pieces, depth), None, []
     
@@ -905,25 +833,20 @@ def enhanced_minimax_alphabeta(game_state, depth, alpha, beta, maximizing_player
         return enhanced_minimax_alphabeta(next_state, depth - 1, alpha, beta, not maximizing_player, 
                                         ai_player, total_pieces, start_time, time_limit)
 
-    # Move ordering for better alpha-beta pruning
     move_scores = []
     for move in valid_moves:
         quick_score = 0
         r, c = move
         
-        # Prioritize corners
         if (r, c) in [(0, 0), (0, 7), (7, 0), (7, 7)]:
             quick_score += 1000
         
-        # Prioritize moves that flip many pieces
         quick_score += len(valid_moves[move]) * 10
         
-        # Use positional values
         quick_score += POSITION_VALUES[r][c]
         
         move_scores.append((quick_score, move))
     
-    # Sort moves by score (best first for maximizing, worst first for minimizing)
     move_scores.sort(key=lambda x: x[0], reverse=maximizing_player)
     ordered_moves = [move for _, move in move_scores]
 
@@ -980,14 +903,11 @@ def enhanced_minimax_alphabeta(game_state, depth, alpha, beta, maximizing_player
 # =============================================================================
 
 def draw_enhanced_button(win, rect, text, font, button_color, text_color, border_color=None, hover_color=None, icon=None):
-    """Enhanced button with better styling and effects."""
     mouse_pos = pygame.mouse.get_pos()
     is_hovered = rect.collidepoint(mouse_pos)
     
-    # Button color with hover effect
     final_color = hover_color if is_hovered and hover_color else button_color
     
-    # Enhanced shadow effect when hovered
     if is_hovered:
         shadow_rect = rect.copy()
         shadow_rect.x += 3
@@ -996,10 +916,8 @@ def draw_enhanced_button(win, rect, text, font, button_color, text_color, border
         pygame.draw.rect(shadow_surface, (0, 0, 0, 80), shadow_surface.get_rect(), border_radius=15)
         win.blit(shadow_surface, shadow_rect)
     
-    # Main button background with enhanced styling
     pygame.draw.rect(win, final_color, rect, border_radius=15)
     
-    # Subtle gradient overlay
     gradient_surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
     for i in range(rect.height // 3):
         alpha = int(40 * (1 - i / (rect.height // 3)))
@@ -1007,7 +925,6 @@ def draw_enhanced_button(win, rect, text, font, button_color, text_color, border
         pygame.draw.line(gradient_surface, color, (0, i), (rect.width, i))
     win.blit(gradient_surface, rect.topleft)
     
-    # Enhanced border
     if border_color:
         pygame.draw.rect(win, border_color, rect, 3, border_radius=15)
         # Inner highlight
@@ -1015,27 +932,22 @@ def draw_enhanced_button(win, rect, text, font, button_color, text_color, border
         highlight_color = tuple(min(255, c + 30) for c in final_color)
         pygame.draw.rect(win, highlight_color, inner_rect, 1, border_radius=12)
     
-    # Enhanced hover glow
     if is_hovered:
         glow_rect = rect.inflate(4, 4)
         glow_surface = pygame.Surface((glow_rect.width, glow_rect.height), pygame.SRCALPHA)
         pygame.draw.rect(glow_surface, (*final_color, 60), glow_surface.get_rect(), border_radius=17)
         win.blit(glow_surface, (glow_rect.x, glow_rect.y))
     
-    # Text rendering (without problematic icons)
     text_surf = font.render(text, True, text_color)
     
-    # Add text shadow for better readability
     shadow_surf = font.render(text, True, (0, 0, 0, 100))
     shadow_rect = shadow_surf.get_rect(center=(rect.centerx + 1, rect.centery + 1))
     win.blit(shadow_surf, shadow_rect)
     
-    # Main text
     text_rect = text_surf.get_rect(center=rect.center)
     win.blit(text_surf, text_rect)
 
 def draw_animated_background(win):
-    """Draw animated gradient background."""
     time_factor = time.time() * 0.5
     
     for y in range(HEIGHT):
@@ -1053,16 +965,13 @@ def draw_animated_background(win):
         pygame.draw.line(win, (r, g, b), (0, y), (WIDTH, y))
 
 def enhanced_main_menu(win, font, big_font):
-    """Enhanced main menu with animations and better styling."""
     global AI_DIFFICULTY
     
-    # Button definitions
     pvp_button = pygame.Rect(WIDTH // 2 - 200, 300, 400, 70)
     pvb_button = pygame.Rect(WIDTH // 2 - 200, 390, 400, 70)
     bvb_button = pygame.Rect(WIDTH // 2 - 200, 480, 400, 70)
     quit_button = pygame.Rect(WIDTH // 2 - 200, 570, 400, 70)
     
-    # Difficulty buttons
     diff_buttons = {
         Difficulty.EASY: pygame.Rect(WIDTH // 2 - 250, 680, 90, 45),
         Difficulty.MEDIUM: pygame.Rect(WIDTH // 2 - 150, 680, 90, 45),
@@ -1071,7 +980,6 @@ def enhanced_main_menu(win, font, big_font):
         Difficulty.GRANDMASTER: pygame.Rect(WIDTH // 2 + 150, 680, 90, 45),
     }
 
-    # Color choice buttons
     play_as_black_button = pygame.Rect(WIDTH // 2 - 250, 390, 220, 70)
     play_as_white_button = pygame.Rect(WIDTH // 2 + 30, 390, 220, 70)
     back_button = pygame.Rect(WIDTH // 2 - 100, 480, 200, 60)
@@ -1082,15 +990,12 @@ def enhanced_main_menu(win, font, big_font):
     while True:
         draw_animated_background(win)
         
-        # Animated title
         title_time = time.time() * 2
         title_offset = int(math.sin(title_time) * 3)
         
-        # Title shadow
         title_shadow = big_font.render("🏁 OTHELLO AI 🏁", True, (20, 20, 20))
         win.blit(title_shadow, (WIDTH // 2 - title_shadow.get_width() // 2 + 4, 154 + title_offset))
         
-        # Main title with gradient effect
         title_text = big_font.render("OTHELLO AI", True, GOLD)
         win.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, 150 + title_offset))
 
@@ -1111,7 +1016,6 @@ def enhanced_main_menu(win, font, big_font):
             draw_enhanced_button(win, play_as_white_button, "Play as White", font, (220, 220, 220), BLACK, GRAY, WHITE)
             draw_enhanced_button(win, back_button, "Back", font, GRAY, BLACK, DARK_GRAY, LIGHT_GRAY)
 
-        # Enhanced difficulty selection
         diff_text = font.render("AI Intelligence Level:", True, WHITE)
         win.blit(diff_text, (WIDTH // 2 - diff_text.get_width() // 2, 640))
         
@@ -1128,7 +1032,6 @@ def enhanced_main_menu(win, font, big_font):
             is_selected = AI_DIFFICULTY == diff
             
             if is_selected:
-                # Pulsing effect for selected difficulty
                 pulse = int(50 + 30 * math.sin(time.time() * 4))
                 color = tuple(min(255, c + pulse) for c in base_color)
                 border_color = GOLD
@@ -1171,12 +1074,10 @@ def enhanced_main_menu(win, font, big_font):
         clock.tick(60)
 
 def enhanced_ai_move_thread(game):
-    """Enhanced AI move calculation with time tracking."""
     try:
         start_time = time.time()
         total_pieces = sum(row.count(PLAYER_BLACK) + row.count(PLAYER_WHITE) for row in game.board)
         
-        # Adaptive time limit based on difficulty
         time_limits = {
             Difficulty.EASY: 1.0,
             Difficulty.MEDIUM: 3.0,
@@ -1206,12 +1107,10 @@ def enhanced_ai_move_thread(game):
         print(f"AI Error: {e}")
 
 def enhanced_game_over_screen(win, font, big_font, winner, final_score, game_stats):
-    """Enhanced game over screen with detailed statistics."""
     overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 180))
     win.blit(overlay, (0, 0))
     
-    # Winner announcement with animation
     winner_time = time.time() * 3
     winner_offset = int(math.sin(winner_time) * 5)
     
@@ -1222,14 +1121,12 @@ def enhanced_game_over_screen(win, font, big_font, winner, final_score, game_sta
     else:
         winner_text, color = "PERFECT TIE!", PURPLE
     
-    # Winner text with shadow
     text_shadow = big_font.render(winner_text, True, (30, 30, 30))
     win.blit(text_shadow, (WIDTH // 2 - text_shadow.get_width() // 2 + 4, 204 + winner_offset))
     
     text_surf = big_font.render(winner_text, True, color)
     win.blit(text_surf, (WIDTH // 2 - text_surf.get_width() // 2, 200 + winner_offset))
     
-    # Game statistics
     black_score, white_score = final_score
     stats_y = 320
     
@@ -1251,7 +1148,6 @@ def enhanced_game_over_screen(win, font, big_font, winner, final_score, game_sta
     
     win.blit(stats_surface, (WIDTH // 2 - 300, stats_y))
     
-    # Enhanced buttons
     play_again_button = pygame.Rect(WIDTH // 2 - 250, 650, 200, 60)
     main_menu_button = pygame.Rect(WIDTH // 2 + 50, 650, 200, 60)
     
@@ -1273,12 +1169,10 @@ def enhanced_game_over_screen(win, font, big_font, winner, final_score, game_sta
         pygame.time.wait(100)
 
 def enhanced_pause_screen(win, font, big_font):
-    """Enhanced pause screen with better styling."""
     overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 200))
     win.blit(overlay, (0, 0))
 
-    # Animated pause text
     pause_time = time.time() * 2
     pause_offset = int(math.sin(pause_time) * 3)
     
@@ -1318,11 +1212,9 @@ class GameState(Enum):
     PAUSED = 4
 
 def main():
-    """Enhanced main game loop with better state management."""
     pygame.mixer.pre_init(44100, -16, 2, 512)
     pygame.init()
     
-    # Load sounds with error handling
     sounds = {}
     sound_files = {
         'place': 'place_sound.wav',
@@ -1334,7 +1226,6 @@ def main():
     for sound_name, filename in sound_files.items():
         try:
             if 'music' in sound_name:
-                # Music files are loaded when needed
                 continue
             sounds[sound_name] = pygame.mixer.Sound(filename)
         except pygame.error:
@@ -1343,14 +1234,12 @@ def main():
     win = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Enhanced Othello AI Championship")
     
-    # Enhanced fonts
     font = pygame.font.Font(None, 36)
     small_font = pygame.font.Font(None, 24)
     big_font = pygame.font.Font(None, 80)
     
     clock = pygame.time.Clock()
     
-    # Game state variables
     game_state = GameState.MENU
     game = None
     game_mode = None
@@ -1359,7 +1248,6 @@ def main():
 
     while True:
         if game_state == GameState.MENU:
-            # Background music for menu
             if not pygame.mixer.music.get_busy():
                 try:
                     pygame.mixer.music.load('menu_music.mp3')
@@ -1373,7 +1261,6 @@ def main():
             game_start_time = time.time()
             game_state = GameState.PLAYING
             
-            # Switch to game music
             pygame.mixer.music.stop()
             try:
                 pygame.mixer.music.load('game_music.mp3')
@@ -1382,7 +1269,6 @@ def main():
             except pygame.error:
                 pass
 
-            # Start AI if needed
             if (game_mode == "BvB") or (game_mode == "PvB" and human_color != game.current_player):
                 if not game.ai_thinking and game.valid_moves:
                     game.ai_thinking = True
@@ -1401,14 +1287,12 @@ def main():
                         game_state = GameState.PAUSED
                         pygame.mixer.music.pause()
                     elif event.key == pygame.K_r and pygame.key.get_pressed()[pygame.K_LCTRL]:
-                        # Ctrl+R to restart
                         game = Othello(sounds)
                         if (game_mode == "BvB") or (game_mode == "PvB" and human_color != game.current_player):
                             if not game.ai_thinking and game.valid_moves:
                                 game.ai_thinking = True
                                 threading.Thread(target=enhanced_ai_move_thread, args=(game,), daemon=True).start()
 
-                # AI move completion
                 if event.type == pygame.USEREVENT:
                     if 'move' in event.dict:
                         made_move = game.make_move(event.move[0], event.move[1])
@@ -1420,7 +1304,6 @@ def main():
                                 game.ai_thinking = True
                                 threading.Thread(target=enhanced_ai_move_thread, args=(game,), daemon=True).start()
 
-                # Human move
                 if is_human_turn and event.type == pygame.MOUSEBUTTONDOWN and not game.ai_thinking:
                     x, y = event.pos
                     if BOARD_X <= x < BOARD_X + BOARD_SIZE and BOARD_Y <= y < BOARD_Y + BOARD_SIZE:
@@ -1434,7 +1317,6 @@ def main():
                                 game.ai_thinking = True
                                 threading.Thread(target=enhanced_ai_move_thread, args=(game,), daemon=True).start()
                 
-                # Mouse hover
                 if event.type == pygame.MOUSEMOTION:
                     x, y = event.pos
                     if BOARD_X <= x < BOARD_X + BOARD_SIZE and BOARD_Y <= y < BOARD_Y + BOARD_SIZE:
@@ -1442,11 +1324,9 @@ def main():
                     else:
                         game.hover_pos = None
             
-            # Enhanced drawing with animated background
             draw_animated_background(win)
             game.draw(win, font, small_font, game_mode)
             
-            # Game over transition
             if game.game_over:
                 game_state = GameState.GAME_OVER
 

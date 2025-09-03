@@ -45,7 +45,6 @@
 \contentsline {subsubsection}{\numberline {9.1.2}تصمیم نهایی}{16}{subsubsection.9.1.2}%
 \contentsline {section}{\numberline {10}مقایسه با روش‌های جایگزین}{16}{section.10}%
 \contentsline {subsection}{\numberline {10.1}مقایسه با جستجوی کامل}{16}{subsection.10.1}%
-\contentsline {section}{\numberline {11}منابع و مراجع}{16}{section.11}%
-\contentsline {section}{\numberline {12}ضمائم}{17}{section.12}%
-\contentsline {subsection}{\numberline {12.1}ضمیمه الف: کد کامل الگوریتم Minimax پیشرفته}{17}{subsection.12.1}%
-\contentsline {subsection}{\numberline {12.2}ضمیمه ب: کد کامل تابع ارزیابی}{19}{subsection.12.2}%
+\contentsline {section}{\numberline {11}ضمائم}{16}{section.11}%
+\contentsline {subsection}{\numberline {11.1}ضمیمه الف: کد کامل الگوریتم Minimax پیشرفته}{16}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}ضمیمه ب: کد کامل تابع ارزیابی}{19}{subsection.11.2}%

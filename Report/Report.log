@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2025.6.23)  3 SEP 2025 15:59
+This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2025.6.23)  3 SEP 2025 18:14
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1396,26 +1396,6 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 [][] []
  []
 
-! Misplaced alignment tab character &.
-l.767 ^^I^^I\item Russell, S. &
-                                Norvig, P. (2020). Artificial Intelligence: ...
-I can't figure out why you would want to use a tab mark
-here. If you just want an ampersand, the remedy is
-simple: Just type `I\&' now. But if some right brace
-up above has ended a previous alignment prematurely,
-you're probably due for more error messages, and you
-might try typing `S' now just to see what is salvageable.
-
-! Misplaced alignment tab character &.
-l.769 ^^I^^I\item van den Herik, H. J., &
-                                          Herschberg, I. S. (1985). The Cons...
-I can't figure out why you would want to use a tab mark
-here. If you just want an ampersand, the remedy is
-simple: Just type `I\&' now. But if some right brace
-up above has ended a previous alignment prematurely,
-you're probably due for more error messages, and you
-might try typing `S' now just to see what is salvageable.
-
 
 
 
@@ -1444,7 +1424,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-3.89061pt}.
 
 [18]
-\endL or \endR problem (0 missing, 1 extra) in paragraph at lines 905--906
+\endL or \endR problem (0 missing, 1 extra) in paragraph at lines 895--896
 [][] []
  []
 
@@ -1467,7 +1447,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-3.89061pt}.
 
 [20]
-\endL or \endR problem (0 missing, 1 extra) in paragraph at lines 1018--1019
+\endL or \endR problem (0 missing, 1 extra) in paragraph at lines 1008--1009
 [][] []
  []
 
@@ -1489,16 +1469,22 @@ L3 programming layer <2025-01-18>
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-Package rerunfilecheck Info: File `Report.out' has not changed.
-(rerunfilecheck)             Checksum: 5DB0716281AB276048E218D3E96B33A5;12332.
+
+Package rerunfilecheck Warning: File `Report.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `Report.out':
+(rerunfilecheck)             Before: 5DB0716281AB276048E218D3E96B33A5;12332
+(rerunfilecheck)             After:  7EA043A1A09CC7BBA5615B0CA8F8B7A1;12183.
  ) 
 Here is how much of TeX's memory you used:
  29490 strings out of 473832
  626896 string characters out of 5733158
- 1566259 words of memory out of 5000000
+ 1633259 words of memory out of 5000000
  52023 multiletter control sequences out of 15000+600000
  566769 words of font info for 107 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 98i,13n,107p,1237b,1887s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 98i,13n,107p,1237b,1938s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
 Output written on Report.pdf (21 pages).
