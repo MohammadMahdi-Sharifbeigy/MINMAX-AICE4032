@@ -9,7 +9,7 @@ from enum import Enum
 import random
 
 # =============================================================================
-# 1. Enhanced Constants and Setup
+# 1.Constants and Setup
 # =============================================================================
 
 # --- Screen Dimensions (Optimized for better fit) ---
@@ -75,11 +75,10 @@ POSITION_VALUES = [
 ]
 
 # =============================================================================
-# 2. Enhanced Game Logic Class
+# 2.Game Logic Class
 # =============================================================================
 
 class Othello:
-    """ Enhanced Othello game with improved state management and analytics. """
     def __init__(self, sounds):
         self.board = [[EMPTY for _ in range(8)] for _ in range(8)]
         self.board[3][3], self.board[4][4] = PLAYER_WHITE, PLAYER_WHITE
@@ -217,7 +216,6 @@ class Othello:
         return sum(1 for r, c in edges if self.board[r][c] == player)
 
     def draw(self, win, font, small_font, game_mode):
-        """Enhanced drawing with improved visual effects."""
         self._draw_enhanced_board(win)
         self._draw_pieces_with_effects(win)
         self._draw_smart_indicators(win)
@@ -674,7 +672,7 @@ class Othello:
 
 
 # =============================================================================
-# 3. Advanced AI with Enhanced Evaluation
+# 3. Advanced AI
 # =============================================================================
 
 def advanced_evaluate_board(board, player, total_pieces, depth_remaining=0):
